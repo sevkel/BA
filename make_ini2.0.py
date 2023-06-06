@@ -4,7 +4,7 @@ import configparser
 
 # Überprüfe, ob ausreichend Argumente übergeben wurden
 if len(sys.argv) < 2:
-    print("Bitte geben Sie den Dateinamen als Argument an.")
+    print("Please insert the filename as argument.")
     sys.exit(1)
 
 # Definiere die Sektionen und Parameter
@@ -23,7 +23,7 @@ config = configparser.ConfigParser()
 for section, params in sections.items():
     config.add_section(section)
     for param in params:
-        value = input(f"Geben Sie den Wert für {param} in {section} ein: ")
+        value = input(f"Please put in a value for {param} in {section}: ")
         config.set(section, param, value)
 
 #define output folder
@@ -39,4 +39,4 @@ configfile_path = os.path.join(output_folder, system + '.ini')
 with open(configfile_path, 'w') as configfile:
     config.write(configfile)
 
-print(f"Die INI-Datei für '{system}' wurde erfolgreich erstellt.")
+print(f"The INI-file for '{system}' was created successfully.")
