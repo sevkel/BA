@@ -2,24 +2,24 @@ import sys, os
 import configparser
 
 
-# Überprüfe, ob ausreichend Argumente übergeben wurden
+# check number of arguments as input
 if len(sys.argv) < 2:
     print("Please insert the filename as argument.")
     sys.exit(1)
 
-# Definiere die Sektionen und Parameter
+# Define sections and parameters
 sections = {
     'functionals': ['func1', 'func2', 'func3'],
     'basis': ['basis1', 'basis2'],
     'system': ['molecule']
-    # Füge weitere Sektionen und Parameter hinzu
+    # Add more sections and parameters if wanted
 }
 
-# Erstelle eine Instanz des configparser
+# create an instance of the configparser
 config = configparser.ConfigParser()
 
 
-# Füge Sektionen und Parameter hinzu
+# Add sections and parameters
 for section, params in sections.items():
     config.add_section(section)
     for param in params:
@@ -34,7 +34,7 @@ if not os.path.exists(output_folder):
     os.makedirs(output_folder)
 
 
-# Speichere die INI-Datei
+# save INI-file
 configfile_path = os.path.join(output_folder, system + '.ini')
 with open(configfile_path, 'w') as configfile:
     config.write(configfile)
