@@ -20,7 +20,7 @@ def save_orbitals(folder_path, homo_index, lumo_index):
     np.savetxt(folder_path + '/' + 'lumo.txt', orbitals[:, lumo_index])
     np.savetxt(folder_path + '/' + 'lumo_plus.txt', orbitals[:, homo_index + 1])
 
-#hallo
+
 if __name__ == "__main__"
 
 #read config file
