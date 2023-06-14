@@ -95,6 +95,7 @@ if __name__ == "__main__":
             np.savetxt(output_folder + '/' + 'energies.txt', energies)
             homo_lumo_filename = 'homo_lumo_energies.txt'
             with open(output_folder + '/' + homo_lumo_filename, 'w') as file:
+                file.write("Total energy: {:.6f} Hartree\n".format(mf_opt.e_tot))
                 file.write("HOMO energy: {:.6f} Hartree\n".format(homo_energy)) #check if its really Hartree
                 file.write("LUMO energy: {:.6f} Hartree\n".format(lumo_energy))
                 file.write("HOMO-LUMO gap: {:.6f} Hartree\n".format(homo_lumo_gap))
