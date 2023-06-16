@@ -3,6 +3,7 @@ from pyscf import gto, tools, dft
 import os, sys
 import configparser
 from pyscf.geomopt.geometric_solver import optimize
+import density_functional_approximation_dm21 as dm21
 
 #functions
 
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     config.read(sys.argv[2])
     functionals = config['functionals']
     basis_sets = config['basis']
-    system = config['system']['molecule'] #added
+    system = config['system']['molecule']
 
     # initialize molecule
     mol = gto.Mole()
@@ -59,11 +60,20 @@ if __name__ == "__main__":
             mol.build()
 
             # initialize dft instance
-            mf = dft.RKS(mol, xc=functionals[functional])
+            mf = dft.RKS(mol)
+            if functional == 'DM21': # added: treat DM21 funcitonal differently
+                mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+            else:
+                mf.xc = functionals[functional]
 
             # geometry optimized calculation
             mol_opt = optimize(mf)
-            mf_opt = dft.RKS(mol_opt, xc=functionals[functional])
+            mf_opt = dft.RKS(mol_opt)
+            if functional == 'DM21': # added: treat DM21 funcitonal differently
+                mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+            else:
+                mf.xc = functionals[functional]
+
             mf_opt.kernel()
 
             # get orbitals and orbital energies
@@ -89,14 +99,15 @@ if __name__ == "__main__":
                 os.makedirs(output_folder)
 
             # save optimized geometry as xyz-file
-            save_opt_xyz_format(mol_opt, system, output_folder) #added
+            save_opt_xyz_format(mol_opt, system, output_folder)
 
             # save energies
             np.savetxt(output_folder + '/' + 'energies.txt', energies)
             homo_lumo_filename = 'homo_lumo_energies.txt'
             with open(output_folder + '/' + homo_lumo_filename, 'w') as file:
-                file.write("Total energy: {:.6f} Hartree\n".format(mf_opt.e_tot))
-                file.write("HOMO energy: {:.6f} Hartree\n".format(homo_energy)) #check if its really Hartree
+                file.write("Total energy: {:.6f} Hartree\n".format(mf_opt.e_tot)) #check if its really Hartree
+                file.write("Exchange-Correlation-Energy: {:.6f} Hartree\n".format(mf_opt.e))
+                file.write("HOMO energy: {:.6f} Hartree\n".format(homo_energy))
                 file.write("LUMO energy: {:.6f} Hartree\n".format(lumo_energy))
                 file.write("HOMO-LUMO gap: {:.6f} Hartree\n".format(homo_lumo_gap))
 
