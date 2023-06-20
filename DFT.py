@@ -3,7 +3,7 @@ from pyscf import gto, tools, dft
 import os, sys
 import configparser
 from pyscf.geomopt.geometric_solver import optimize
-import density_functional_approximation_dm21 as dm21
+#import density_functional_approximation_dm21 as dm21
 
 #functions
 
@@ -106,7 +106,6 @@ if __name__ == "__main__":
             homo_lumo_filename = 'homo_lumo_energies.txt'
             with open(output_folder + '/' + homo_lumo_filename, 'w') as file:
                 file.write("Total energy: {:.6f} Hartree\n".format(mf_opt.e_tot)) #check if its really Hartree
-                file.write("Exchange-Correlation-Energy: {:.6f} Hartree\n".format(mf_opt.e))
                 file.write("HOMO energy: {:.6f} Hartree\n".format(homo_energy))
                 file.write("LUMO energy: {:.6f} Hartree\n".format(lumo_energy))
                 file.write("HOMO-LUMO gap: {:.6f} Hartree\n".format(homo_lumo_gap))
