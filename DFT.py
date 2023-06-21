@@ -3,7 +3,7 @@ from pyscf import gto, tools, dft
 import os, sys
 import configparser
 from pyscf.geomopt.geometric_solver import optimize
-#import density_functional_approximation_dm21 as dm21
+import density_functional_approximation_dm21 as dm21
 
 #functions
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
             # initialize dft instance
             mf = dft.RKS(mol)
-            if functional == 'DM21': # added: treat DM21 funcitonal differently
+            if functional == 'DM21': # added: treat DM21 functional differently
                 mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
             else:
                 mf.xc = functionals[functional]
@@ -76,6 +76,8 @@ if __name__ == "__main__":
 
             mf_opt.kernel()
 
+
+
             # get orbitals and orbital energies
             energies = mf_opt.mo_energy
             orbitals = mf_opt.mo_coeff
@@ -88,6 +90,10 @@ if __name__ == "__main__":
             homo_energy = energies[homo_idx]
             lumo_energy = energies[lumo_idx]
             homo_lumo_gap = lumo_energy - homo_energy
+
+
+
+
 
             # SAVING DATA
 
@@ -105,7 +111,7 @@ if __name__ == "__main__":
             np.savetxt(output_folder + '/' + 'energies.txt', energies)
             homo_lumo_filename = 'homo_lumo_energies.txt'
             with open(output_folder + '/' + homo_lumo_filename, 'w') as file:
-                file.write("Total energy: {:.6f} Hartree\n".format(mf_opt.e_tot)) #check if its really Hartree
+                file.write("Total energy: {:.6f} Hartree\n".format(mf_opt.e_tot))
                 file.write("HOMO energy: {:.6f} Hartree\n".format(homo_energy))
                 file.write("LUMO energy: {:.6f} Hartree\n".format(lumo_energy))
                 file.write("HOMO-LUMO gap: {:.6f} Hartree\n".format(homo_lumo_gap))
