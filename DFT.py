@@ -4,7 +4,7 @@ import os
 import sys
 import configparser
 from pyscf.geomopt.geometric_solver import optimize
-#import density_functional_approximation_dm21 as dm21
+import density_functional_approximation_dm21 as dm21
 
 
 # Functions
@@ -93,15 +93,13 @@ if __name__ == "__main__":
             # for now only for W4-11 set
             # maybe get output folder as argv argument??
             if config.getboolean('system', 'single_atm'):
-                output_folder = '../results/' + '/atoms_W4-11/' + system + '/' + functionals[functional] + '_' + \
+                output_folder = './results/' + '/atoms_W4-11/' + system + '/' + functionals[functional] + '_' + \
                                 basis_sets[basis]
             else:
-                output_folder = '../results/' + '/molecs_W4-11/' + system + '/' + functionals[functional] + '_' + \
+                output_folder = './results/' + '/molecs_W4-11/' + system + '/' + functionals[functional] + '_' + \
                                 basis_sets[basis]
             if not os.path.exists(output_folder):
                 os.makedirs(output_folder)
-            '''else:
-                break'''
 
             # start calculation
             mol.basis = basis_sets[basis]
@@ -113,7 +111,7 @@ if __name__ == "__main__":
                 mf = dft.RKS(mol)
             else:
                 mf = dft.UKS(mol)  # unrestricted if there are unpaired elecs
-            if functional == 'DM21':  # added: treat DM21 functional differently
+            if functionals[functional] == 'DM21':  # added: treat DM21 functional differently
                 mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
             else:
                 mf.xc = functionals[functional]
@@ -126,7 +124,7 @@ if __name__ == "__main__":
                 else:
                     mf_opt = dft.UKS(mol_opt)
 
-                if functional == 'DM21':  # added: treat DM21 functional differently
+                if functionals[functional] == 'DM21':  # added: treat DM21 functional differently
                     mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
                 else:
                     mf.xc = functionals[functional]
