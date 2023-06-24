@@ -43,7 +43,6 @@ for section, params in sections.items():
             i += 1
 config['system'] = {'molecule': sys.argv[1],
                     'unpaired_elecs': input("How many unpaired electrons does the system have?: "),
-                    'geom_opt': input("Type 'True', if you want geometry optimization and 'False' if you dont: "),
                     'single_atm': input("Type 'True' if the system is a single Atom and 'False' if it is not")}
 
 # Define output folder
