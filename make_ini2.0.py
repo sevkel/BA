@@ -2,8 +2,10 @@ import sys, os
 import configparser
 
 # check number of arguments as input
-if len(sys.argv) != 2:
-    print("Please insert the system- or molecule name as an argument.")
+if len(sys.argv) != 3:
+    print("Please insert the system- or molecule name as first argument and the output-folder name (e.g. atoms_W4-11) "
+          "as second argument which will be created "
+          "in the testsystems folder.")
     sys.exit(1)
 
 # Define sections and parameters for functionals and basis sets
@@ -39,11 +41,14 @@ for section, params in sections.items():
             params.append(param)
             config.set(section, param, value)
             i += 1
-config['system'] = {'molecule': sys.argv[1]}
+config['system'] = {'molecule': sys.argv[1],
+                    'unpaired_elecs': input("How many unpaired electrons does the system have?: "),
+                    'geom_opt': input("Type 'True', if you want geometry optimization and 'False' if you dont: "),
+                    'single_atm': input("Type 'True' if the system is a single Atom and 'False' if it is not")}
 
 # Define output folder
 system = config['system']['molecule']
-output_folder = './testsystems/' + system
+output_folder = '../' + '/testsystems'+ '/' + sys.argv[2] + '/' + system
 
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)
