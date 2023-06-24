@@ -38,7 +38,9 @@ def save_opt_xyz_format(mol, system, folder_path = ''):
             j += 1
             xyz_file.write(s+'\n')
 
-def get_atom_energie(atom_symbol): # for now, only for W4-11 set
+# get total atom energy
+
+def get_atom_energie(atom_symbol): # for now only for W4-11 set
     filepath = '../results/atoms_W4-11' + atom_symbol
     with open(filepath, 'r') as file:
         lines = file.readlines()
@@ -48,6 +50,9 @@ def get_atom_energie(atom_symbol): # for now, only for W4-11 set
                 if len(parts) > 1:
                     energy = float(parts[1].split()[0])
                     return energy
+
+# get molecule reaction energy
+
 def get_react_energy(mf_obj, mol):
     atom_symbols = [mol.atom_symbol(i).lower() for i in range(mol.natm)]
     e_react = (-1) * mf_obj.e_tot
