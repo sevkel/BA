@@ -43,11 +43,11 @@ for section, params in sections.items():
             i += 1
 config['system'] = {'molecule': sys.argv[1],
                     'unpaired_elecs': input("How many unpaired electrons does the system have?: "),
-                    'single_atm': input("Type 'True' if the system is a single Atom and 'False' if it is not")}
+                    'single_atm': input("Type 'True' if the system is a single Atom and 'False' if it is not: ")}
 
 # Define output folder
 system = config['system']['molecule']
-output_folder = '../' + '/testsystems'+ '/' + sys.argv[2] + '/' + system
+output_folder = './' + '/testsystems'+ '/' + sys.argv[2] + '/' + system
 
 if not os.path.exists(output_folder):
     os.makedirs(output_folder)

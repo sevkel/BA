@@ -44,12 +44,12 @@ def save_opt_xyz_format(mol, system, folder_path=''):
 
 # get total atom energy
 
-def get_atom_energie(atom_symbol):  # for now only for W4-11 set
-    filepath = '../results/atoms_W4-11' + atom_symbol
+def get_atom_energie(atom_symbol, func, basis):  # for now only for W4-11 set
+    filepath = './results/atoms_W4-11/' + atom_symbol + '/' + func + '_' + basis
     with open(filepath, 'r') as file:
         lines = file.readlines()
         for line in lines:
-            if line.startswith('Total energy'):
+            if 'Total energy' in line:
                 parts = line.split(':')
                 if len(parts) > 1:
                     energy = float(parts[1].split()[0])
@@ -58,13 +58,16 @@ def get_atom_energie(atom_symbol):  # for now only for W4-11 set
 
 # get molecule reaction energy
 
-def get_react_energy(mf_obj, mol):
+def get_react_energy(mf_obj, mol, func, basis):
     atom_symbols = [mol.atom_symbol(i).lower() for i in range(mol.natm)]
-    e_react = (-1) * mf_obj.e_tot
+    e_react = -mf_obj.e_tot
+    counted_atoms = set()
     for atom in atom_symbols:
-        occurrence = atom_symbols.count(atom)
-        atom_etot = get_atom_energie(atom)
-        e_react += occurrence * atom_etot
+        if atom not in counted_atoms:
+            occurrence = atom_symbols.count(atom)
+            atom_etot = get_atom_energie(atom, func, basis)
+            e_react += occurrence * atom_etot
+            counted_atoms.add(atom)
     return e_react
 
 
@@ -98,7 +101,9 @@ if __name__ == "__main__":
             else:
                 output_folder = './results/' + '/molecs_W4-11/' + system + '/' + functionals[functional] + '_' + \
                                 basis_sets[basis]
-            if not os.path.exists(output_folder):
+            if os.path.exists(output_folder):
+                break
+            else:
                 os.makedirs(output_folder)
 
             # start calculation
@@ -127,7 +132,7 @@ if __name__ == "__main__":
                 if functionals[functional] == 'DM21':  # added: treat DM21 functional differently
                     mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
                 else:
-                    mf.xc = functionals[functional]
+                    mf_opt.xc = functionals[functional]
 
                 mf_opt.kernel()
 
@@ -144,7 +149,7 @@ if __name__ == "__main__":
                 homo_energy = mo_energies[homo_idx]
                 lumo_energy = mo_energies[lumo_idx]
                 homo_lumo_gap = lumo_energy - homo_energy
-                e_react = get_react_energy(mf_opt, mol_opt)
+                e_react = get_react_energy(mf_opt, mol_opt, functionals[functional], basis_sets[basis])
 
                 # save optimized geometry
                 save_opt_xyz_format(mol_opt, system, output_folder)
