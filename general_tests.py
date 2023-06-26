@@ -1,7 +1,7 @@
 from pyscf import gto
 from pyscf import dft
 import configparser
-'''import os
+import os
 from pyscf.geomopt.geometric_solver import optimize
 
 # Create the molecule of interest and select the basis set.
@@ -19,13 +19,7 @@ mf = dft.RKS(methane)
 mf.xc = 'pbe'
 output_folder = '/Users/severinkeller/Desktop/test.txt'
 with open(output_folder, 'w') as f:
-    f.write(str(mf.analyze))'''
+    f.write(str(mf.analyze))
 
-config = configparser.ConfigParser()
-config.read('/Users/severinkeller/Documents/GitHub/testsystems/atoms_W4-11/al/al.ini')
-functionals = config['functionals']
-basis_sets = config['basis']
-system = config['system']['molecule']
 
-print(basis_sets['basis1'])
 
