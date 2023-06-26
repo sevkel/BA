@@ -1,33 +1,76 @@
-import pyscf
-from pyscf import dft, gto
-import os
-# Definiere das Molekül
-mol = pyscf.gto.M(
-    atom='H 0 0 0; H 0 0 0.74',
-    basis='sto-3g'
+import density_functional_approximation_dm21 as dm21
+from pyscf import gto
+from pyscf import dft
+from pyscf.geomopt.geometric_solver import optimize
 
+# Create the molecule of interest and select the basis set.
+methane = gto.Mole()
+methane.atom = """H 0.000000000000 0.000000000000 0.000000000000
+                  C 0.000000000000 0.000000000000 1.087900000000
+                  H 1.025681956337 0.000000000000 1.450533333333
+                  H -0.512840978169 0.888266630391 1.450533333333
+                  H -0.512840978169 -0.888266630391 1.450533333333"""
+methane.basis = 'def2-qzvp'
+#methane.verbose = 4
+methane.build()
+'''atom_symbols = [methane.atom_symbol(i).lower() for i in range(methane.natm)]
+print(atom_symbols)
+counted_atoms = set()
+for atom in atom_symbols:
+  if atom not in counted_atoms:
+    occurrence = atom_symbols.count(atom)
+    print(str(occurrence) + ' ' + atom)
+    counted_atoms.add(atom)'''
 
-mf = pyscf.dft.RKS(mol)
-mf.xc = 'PBE'
+carbon = gto.Mole()
+carbon.atom = 'C 0.0 0.0 0.0'
+carbon.basis = 'def2-qzvp'
+carbon.spin = 2
+#carbon.verbose = 4
+carbon.build()
 
-e_tot = mf.kernel()
-### Option 1: get_veff() returns J + V_xc
-veff = mf.get_veff()
-xc_energyone = -veff.exc
-###
+hydrogen = gto.Mole()
+hydrogen.atom = 'H 0.0 0.0 0.0'
+hydrogen.basis = 'def2-qzvp'
+hydrogen.spin = 1
+#hydrogen.verbose = 4
+hydrogen.build()
 
-print("Austausch-Korrelationsenergie:", xc_energyone)
+energies = []
 
+mf_meth = dft.RKS(methane)
+meth_opt = optimize(mf_meth)
+mf_meth_opt = dft.RKS(meth_opt)
+mf_meth_opt.xc = 'B3LYP'
+mf_meth_opt.run()
+dm0 = mf_meth_opt.make_rdm1()
 
-### Option 2: w and w/ XC part -> get the difference between the energies
-mf.xc = ''
-e_no_xc = mf.kernel()
+mf_meth_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+# It's wise to relax convergence tolerances.
+mf_meth_opt.conv_tol = 1E-6
+mf_meth_opt.conv_tol_grad = 1E-3
+# Run the DFT calculation.
+energy = mf_meth_opt.kernel(dm0=dm0)
+energies.append(energy)
 
-# Berechne die Austausch-Korrelationsenergie
-xc_energytwo = e_tot - e_no_xc
+for mol in [carbon, hydrogen]:
+  # Create a DFT solver and insert the DM21 functional into the solver.
+  if mol.spin == 0:
+    mf = dft.RKS(mol)
+  else:
+    mf = dft.UKS(mol)
+  # It will make SCF faster to start close to the solution with a cheaper
+  # functional.
+  mf.xc = 'B3LYP'
+  mf.run()
+  dm0 = mf.make_rdm1()
 
-# Drucke die Austausch-Korrelationsenergie
-print("Austausch-Korrelationsenergie:", xc_energytwo)
-###
+  mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+  # It's wise to relax convergence tolerances.
+  mf.conv_tol = 1E-6
+  mf.conv_tol_grad = 1E-3
+  # Run the DFT calculation.
+  energy = mf.kernel(dm0=dm0)
+  energies.append(energy)
 
-
+print({'CH4': energies[0], 'C': energies[1], 'H': energies[2]})
