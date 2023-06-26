@@ -45,7 +45,7 @@ def save_opt_xyz_format(mol, system, folder_path=''):
 # get total atom energy
 
 def get_atom_energie(atom_symbol, func, basis):  # for now only for W4-11 set
-    filepath = './results/atoms_W4-11/' + atom_symbol + '/' + func + '_' + basis
+    filepath = './results/atoms_W4-11/' + atom_symbol + '/' + func + '_' + basis + '/energies.txt'
     with open(filepath, 'r') as file:
         lines = file.readlines()
         for line in lines:
@@ -86,8 +86,19 @@ if __name__ == "__main__":
     mol = gto.Mole()
     mol.atom = sys.argv[1]
     # mol.verbose = 4 # shows details in building the molecule. un-commend if wanted
+    mol.basis = basis_sets['basis1']  # define the basis before the loop as we only use def2-qzvp
+    mol.spin = int(config['system']['unpaired_elecs'])
+    mol.build()
+    if mol.spin == 0:  # restricted if no unpaired elecs
+        mf = dft.RKS(mol)
+    else:
+        mf = dft.UKS(mol)  # unrestricted if there are unpaired elecs
 
-    # calculations with all configurations
+    if not config.getboolean('system', 'single_atm'):
+        mf.xc = 'pbe0'  # optimize with the more expensive pbe0 functional (not possible to optimize with the DM21)
+        mol_opt = optimize(mf)
+
+    # CALCULATIONS WITH ALL CONFIGURATIONS
 
     for basis in basis_sets:
         for functional in functionals:
@@ -106,24 +117,9 @@ if __name__ == "__main__":
             else:
                 os.makedirs(output_folder)
 
-            # start calculation
-            mol.basis = basis_sets[basis]
-            mol.spin = int(config['system']['unpaired_elecs'])
-            mol.build()
-
-            # initialize dft instance (taking also care of restricted or unrestricted)
-            if mol.spin == 0:  # restricted if no unpaired elecs
-                mf = dft.RKS(mol)
-            else:
-                mf = dft.UKS(mol)  # unrestricted if there are unpaired elecs
-            if functionals[functional] == 'DM21':  # added: treat DM21 functional differently
-                mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
-            else:
-                mf.xc = functionals[functional]
-
             # geometry optimized calculation, if wanted
             if not config.getboolean('system', 'single_atm'):  # geom opt
-                mol_opt = optimize(mf)
+                #mol_opt = optimize(mf)
                 if mol.spin == 0:
                     mf_opt = dft.RKS(mol_opt)
                 else:
@@ -155,6 +151,7 @@ if __name__ == "__main__":
                 save_opt_xyz_format(mol_opt, system, output_folder)
 
             else:  # (no geom opt)
+                mf.xc = functionals[functional]
                 mf.kernel()
 
                 # get orbitals and orbital energies
