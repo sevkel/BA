@@ -5,46 +5,66 @@ import sys
 import configparser
 from pyscf.geomopt.geometric_solver import optimize
 import density_functional_approximation_dm21 as dm21
+from pylibnxc.pyscf import UKS
 
 
-# Functions
+# FUNCTIONS
 
-# saving cube files for homo and lumo orbitals
-def save_cubefile(folder_path, homo_index, lumo_index):
-    tools.cubegen.orbital(mol, folder_path + '/' + 'orbital_homo.cube', orbitals[:, homo_index])
-    tools.cubegen.orbital(mol, folder_path + '/' + 'orbital_homo_minus.cube', orbitals[:, homo_index - 1])
-    tools.cubegen.orbital(mol, folder_path + '/' + 'orbital_lumo.cube', orbitals[:, lumo_index])
-    tools.cubegen.orbital(mol, folder_path + '/' + 'orbital_lumo_plus.cube', orbitals[:, lumo_index + 1])
+def save_cubefile_alpha_beta(mol_obj, mf_obj, folder_path, homo_alpha_index, lumo_alpha_index, homo_beta_index, lumo_beta_index):
 
+    """saving cube files for homo and lumo orbitals"""
 
-# saving orbitals
-def save_orbitals(folder_path, homo_index, lumo_index):
-    np.savetxt(folder_path + '/' + 'homo.txt', orbitals[:, homo_index])
-    np.savetxt(folder_path + '/' + 'homo_minus.txt', orbitals[:, homo_index - 1])
-    np.savetxt(folder_path + '/' + 'lumo.txt', orbitals[:, lumo_index])
-    np.savetxt(folder_path + '/' + 'lumo_plus.txt', orbitals[:, homo_index + 1])
+    alpha_coeff = mf_obj.mo_coeff[0,:,:]
+    beta_coeff = mf_obj.mo_coeff[1,:,:]
 
+    tools.cubegen.orbital(mol_obj, folder_path + '/alpha_orbital_homo.cube', alpha_coeff[:, homo_alpha_index])
+    tools.cubegen.orbital(mol_obj, folder_path + '/alpha_orbital_homo_minus.cube', alpha_coeff[:, homo_alpha_index - 1])
+    tools.cubegen.orbital(mol_obj, folder_path + '/alpha_orbital_lumo.cube', alpha_coeff[:, lumo_alpha_index])
+    tools.cubegen.orbital(mol_obj, folder_path + '/alpha_orbital_lumo_plus.cube', alpha_coeff[:, lumo_alpha_index + 1])
 
-# saving optimized geometry as xyz-file
-def save_opt_xyz_format(mol, system, folder_path=''):
-    coords = mol.atom_coords(unit='ang')
+    tools.cubegen.orbital(mol_obj, folder_path + '/beta_orbital_homo.cube', beta_coeff[:, homo_beta_index])
+    tools.cubegen.orbital(mol_obj, folder_path + '/beta_orbital_homo_minus.cube', beta_coeff[:, homo_beta_index - 1])
+    tools.cubegen.orbital(mol_obj, folder_path + '/beta_orbital_lumo.cube', beta_coeff[:, lumo_beta_index])
+    tools.cubegen.orbital(mol_obj, folder_path + '/beta_orbital_lumo_plus.cube', beta_coeff[:, lumo_beta_index + 1])
+
+def save_orbitals(mf_obj, folder_path, homo_alpha_index, lumo_alpha_index, homo_beta_index, lumo_beta_index):
+
+    """saving orbitals"""
+
+    alpha_coeff = mf_obj.mo_coeff[0,:,:]
+    beta_coeff = mf_obj.mo_coeff[1,:,:]
+    np.savetxt(folder_path + '/' + 'alpha_homo_coeff.txt', alpha_coeff[:, homo_alpha_index])
+    np.savetxt(folder_path + '/' + 'alpha_homo_minus_coeff.txt', alpha_coeff[:, homo_alpha_index - 1])
+    np.savetxt(folder_path + '/' + 'alpha_lumo_coeff.txt', alpha_coeff[:, lumo_alpha_index])
+    np.savetxt(folder_path + '/' + 'alpha_lumo_plus_coeff.txt', alpha_coeff[:, lumo_alpha_index + 1])
+
+    np.savetxt(folder_path + '/' + 'beta_homo_coeff.txt', beta_coeff[:, homo_beta_index])
+    np.savetxt(folder_path + '/' + 'beta_homo_minus_coeff.txt', beta_coeff[:, homo_beta_index - 1])
+    np.savetxt(folder_path + '/' + 'beta_lumo_coeff.txt', beta_coeff[:, lumo_beta_index])
+    np.savetxt(folder_path + '/' + 'beta_lumo_plus_coeff.txt', beta_coeff[:, lumo_beta_index + 1])
+
+def save_opt_xyz_format(mol_obj, system, folder_path=''):
+
+    """saving optimized geometry as xyz-file"""
+
+    coords = mol_obj.atom_coords(unit='ang')
     with open(folder_path + '/' + system + '_optimized.xyz', 'w') as xyz_file:
-        xyz_file.write(str(mol.natm) + '\n')
+        xyz_file.write(str(mol_obj.natm) + '\n')
         xyz_file.write(system + '\n')
         j = 0
         for atom in coords:
             list = []
-            list.append(mol.atom_symbol(j))
+            list.append(mol_obj.atom_symbol(j))
             for i in range(len(atom)):
                 list.append(atom[i])
             s = '      '.join(str(x) for x in list)
             j += 1
             xyz_file.write(s + '\n')
 
-
-# get total atom energy
-
 def get_atom_energie(atom_symbol, func, basis):  # for now only for W4-11 set
+
+    """get total atom energy"""
+
     filepath = './results/atoms_W4-11/' + atom_symbol + '/' + func + '_' + basis + '/energies.txt'
     with open(filepath, 'r') as file:
         lines = file.readlines()
@@ -55,11 +75,11 @@ def get_atom_energie(atom_symbol, func, basis):  # for now only for W4-11 set
                     energy = float(parts[1].split()[0])
                     return energy
 
+def get_react_energy(mf_obj, mol_obj, func, basis):
 
-# get molecule reaction energy
+    """get molecule reaction energy"""
 
-def get_react_energy(mf_obj, mol, func, basis):
-    atom_symbols = [mol.atom_symbol(i).lower() for i in range(mol.natm)]
+    atom_symbols = [mol_obj.atom_symbol(i).lower() for i in range(mol_obj.natm)]
     e_react = -mf_obj.e_tot
     counted_atoms = set()
     for atom in atom_symbols:
@@ -89,23 +109,16 @@ if __name__ == "__main__":
     mol.basis = basis_sets['basis1']  # define the basis before the loop as we only use def2-qzvp
     mol.spin = int(config['system']['unpaired_elecs'])
     mol.build()
-    if mol.spin == 0:  # restricted if no unpaired elecs
-        mf = dft.RKS(mol)
-    else:
-        mf = dft.UKS(mol)  # unrestricted if there are unpaired elecs
+    mf = dft.UKS(mol)
 
-    if not config.getboolean('system', 'single_atm'):
-        mf.xc = 'pbe0'  # optimize with the more expensive pbe0 functional (not possible to optimize with the DM21)
-        mol_opt = optimize(mf)
-
-    # CALCULATIONS WITH ALL CONFIGURATIONS
+    """CALCULATIONS WITH ALL CONFIGURATIONS"""
 
     for basis in basis_sets:
         for functional in functionals:
 
-            # define output folder, depending if atom or molecule. We dont need geometry opt. for single atoms
-            # for now only for W4-11 set
-            # maybe get output folder as argv argument??
+            """define output folder, depending if atom or molecule. We dont need geometry opt. for single atoms
+            for now only for W4-11 set"""
+
             if config.getboolean('system', 'single_atm'):
                 output_folder = './results/' + '/atoms_W4-11/' + system + '/' + functionals[functional] + '_' + \
                                 basis_sets[basis]
@@ -113,64 +126,84 @@ if __name__ == "__main__":
                 output_folder = './results/' + '/molecs_W4-11/' + system + '/' + functionals[functional] + '_' + \
                                 basis_sets[basis]
             if os.path.exists(output_folder):
-                break
+                continue
             else:
                 os.makedirs(output_folder)
 
-            # geometry optimized calculation, if wanted
-            if not config.getboolean('system', 'single_atm'):  # geom opt
-                #mol_opt = optimize(mf)
-                if mol.spin == 0:
-                    mf_opt = dft.RKS(mol_opt)
-                else:
-                    mf_opt = dft.UKS(mol_opt)
 
-                if functionals[functional] == 'DM21':  # added: treat DM21 functional differently
-                    mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+            if not config.getboolean('system', 'single_atm'):  # geom opt
+
+                if functionals[functional] in ['DM21', 'DM21m', 'DM21mc', 'DM21mu']:  # treat DM21 functional differently
+                    mf.xc = 'pbe0'
+                    mol_opt = optimize(mf)  # geometry optimization
+                    mf_opt = dft.UKS(mol_opt)
+                    if functionals[functional] == 'DM21':
+                        mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+                    elif functionals[functional] == 'DM21m':
+                        mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21m)
+                    elif functionals[functional] == 'DM21mc':
+                        mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21mc)
+                    elif functionals[functional] == 'DM21mu':
+                        mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21mu)
+                elif functionals[functional] in ['GGA_XC_PBE', 'MGGA_XC_SCAN']:
+                    mf = UKS(mol, nxc=functionals[functional], nxc_kind='grid')
+                    mol_opt = optimize(mf)
+                    mf_opt = UKS(mol_opt, nxc=functionals[functional], nxc_kind='grid')
                 else:
+                    mf.xc = functionals[functional]
+                    mol_opt = optimize(mf)
+                    mf_opt = dft.UKS(mol_opt)
                     mf_opt.xc = functionals[functional]
 
                 mf_opt.kernel()
 
-                # get orbitals and orbital energies
+                # get orbital energies
                 mo_energies = mf_opt.mo_energy
-                orbitals = mf_opt.mo_coeff
 
-                # get LUMO and HOMO index; ENERGIES ARE ALREADY SORTED!
-                lumo_idx = mf_opt.mo_occ.tolist().index(0.0)
-                homo_idx = lumo_idx - 1
+                # get LUMO and HOMO index for alpha and beta; ENERGIES ARE ALREADY SORTED!
+                occ_orbs = mf_opt.mo_occ.tolist()
+
+                alpha_lumo_idx = occ_orbs[0].index(0.0)
+                beta_lumo_idx = occ_orbs[1].index(0.0)
+
+                alpha_homo_idx = alpha_lumo_idx - 1
+                beta_homo_idx = beta_lumo_idx - 1
 
                 # total energy, homo-lumo energies and gap and reaction energy for molecules
                 e_tot = mf_opt.e_tot
-                homo_energy = mo_energies[homo_idx]
-                lumo_energy = mo_energies[lumo_idx]
-                homo_lumo_gap = lumo_energy - homo_energy
+                energy_alpha_homo = mo_energies[0][alpha_homo_idx]
+                energy_alpha_lumo = mo_energies[0][alpha_lumo_idx]
+                energy_beta_homo = mo_energies[1][beta_homo_idx]
+                energy_beta_lumo = mo_energies[1][beta_lumo_idx]
+
+                alpha_hl_gap = abs(energy_alpha_lumo - energy_alpha_homo)
+                beta_hl_gap = abs(energy_beta_lumo - energy_beta_homo)
+
                 e_react = get_react_energy(mf_opt, mol_opt, functionals[functional], basis_sets[basis])
 
                 # save optimized geometry
                 save_opt_xyz_format(mol_opt, system, output_folder)
 
-            else:  # (no geom opt)
-                mf.xc = functionals[functional]
+            else:  # no geom opt --> single atoms
+
+                if functionals[functional] == 'DM21':  # treat DM21 functional differently
+                    mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+                elif functionals[functional] == 'DM21m':
+                    mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21m)
+                elif functionals[functional] == 'DM21mc':
+                    mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21mc)
+                elif functionals[functional] == 'DM21mu':
+                    mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21mu)
+                elif functionals[functional] in ['GGA_XC_PBE', 'MGGA_XC_SCAN']:
+                    mf = UKS(mol, nxc=functionals[functional], nxc_kind='grid')
+                else:
+                    mf.xc = functionals[functional]
+
                 mf.kernel()
 
-                # get orbitals and orbital energies
+                # total energy and mo energies
                 mo_energies = mf.mo_energy
-                orbitals = mf.mo_coeff
-
-                # total energy
                 e_tot = mf.e_tot
-                '''# get LUMO and HOMO index; ENERGIES ARE ALREADY SORTED!
-                lumo_idx = mf_opt.mo_occ.tolist().index(0.0) #Gives a ALPHA/BETA list?
-                homo_idx = lumo_idx - 1 
-
-                # total energy, homo-lumo energies and gap and reaction energy for molecules
-                e_tot = mf_opt.e_tot
-                homo_energy = mo_energies[homo_idx]
-                lumo_energy = mo_energies[lumo_idx]
-                homo_lumo_gap = lumo_energy - homo_energy
-                '''
-
 
 
             # SAVING DATA
@@ -181,14 +214,18 @@ if __name__ == "__main__":
             with open(output_folder + '/' + energy_filename, 'w') as file:
                 file.write("Total energy: {:.15f} Hartree\n".format(e_tot))
                 if not config.getboolean('system', 'single_atm'):
-                    file.write("Reaction energy: {:.15f} Hartree\n".format(e_react))
-                    file.write("HOMO energy: {:.15f} Hartree\n".format(homo_energy))
-                    file.write("LUMO energy: {:.15f} Hartree\n".format(lumo_energy))
-                    file.write("HOMO-LUMO gap: {:.15f} Hartree\n".format(homo_lumo_gap))
+                    file.write("Reaction energy: {:.15f} kcal/mol\n".format(e_react * 627.5096080305927))
+                    file.write("alpha-HOMO energy: {:.15f} Hartree\n".format(energy_alpha_homo))
+                    file.write("alpha-LUMO energy: {:.15f} Hartree\n".format(energy_alpha_lumo))
+                    file.write("beta-HOMO energy: {:.15f} Hartree\n".format(energy_beta_homo))
+                    file.write("beta-LUMO energy: {:.15f} Hartree\n".format(energy_beta_lumo))
+                    file.write("alpha-HOMO-LUMO gap: {:.15f} Hartree\n".format(alpha_hl_gap))
+                    file.write("beta-HOMO-LUMO gap: {:.15f} Hartree\n".format(beta_hl_gap))
 
 
-            # saving cube files for homo and lumo orbitals
+            # saving cube files for alpha/beta homo and lumo orbitals
             if not config.getboolean('system', 'single_atm'):
-                save_cubefile(output_folder, homo_idx, lumo_idx)
-                save_orbitals(output_folder, homo_idx, lumo_idx)
+                save_cubefile_alpha_beta(mol, mf_opt, output_folder, alpha_homo_idx, alpha_lumo_idx, beta_homo_idx, beta_lumo_idx)
+                save_orbitals(mf_opt, output_folder, alpha_homo_idx, alpha_lumo_idx, beta_homo_idx, beta_lumo_idx)
+
 

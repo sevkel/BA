@@ -2,7 +2,7 @@ import os
 import sys
 
 # dir path
-dirpath = '/Users/severinkeller/Documents/GitHub/testsystems/molecs_W4-11'
+dirpath = sys.argv[1]
 
 # iterate through folders
 for dirname in os.listdir(dirpath):
@@ -26,9 +26,9 @@ for dirname in os.listdir(dirpath):
         # put files into DFT.py and run it
         for ini_datei in ini_files:
             for xyz_datei in xyz_files:
-                command = f'python3 ./development/DFT.py {xyz_datei} {ini_datei}'
-                print(command)
-                #os.system(command)
+                command = f'sbatch /alcc/gpfs2/home/u/kellerse/jobsub.sh {xyz_datei} {ini_datei}'
+                #print(command)
+                os.system(command)
 
 
 

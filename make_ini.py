@@ -56,5 +56,4 @@ if not os.path.exists(output_folder):
 configfile_path = os.path.join(output_folder, system + '.ini')
 with open(configfile_path, 'w') as configfile:
     config.write(configfile)
-
 print(f"The INI-file for '{system}' was created successfully.")
