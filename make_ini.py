@@ -1,6 +1,8 @@
 import sys, os
 import configparser
 
+"""Construct initialization files for DFT calculations."""
+
 # check number of arguments as input
 if len(sys.argv) != 3:
     print("Insert path to folder, in which molecule folders are stored.")
