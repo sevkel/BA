@@ -1,5 +1,7 @@
 import os
 
+"""Calculate and write out the reaction energies for each system."""
+
 def get_reaction(line):
     stoich_dict = {}
     stoich_dict['idx'] = line.split(":")[0]
