@@ -187,11 +187,11 @@ if __name__ == "__main__":
                         mf_opt._numint = dm21.NeuralNumInt(dm21.Functional.DM21mu)
                 elif functionals[functional] in ['GGA_XC_PBE', 'MGGA_XC_SCAN', 'GGA_HM', 'MGGA_HM']:
                     """
-                    use one of the codes below and comment the other, wheter you run into convergence problems with 
+                    Use one of the codes below and comment the other, wheter you run into convergence problems with 
                     the functionals or not. 
                     !!!
                     Also, run this code with only one of these four functionals together 
-                    with the other functionals.
+                    with the other functionals. This is due to poor convergence of the functionals.
                     !!!
                     
                     
